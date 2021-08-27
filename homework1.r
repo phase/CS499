@@ -30,10 +30,11 @@ if (!file.exists("homework1.gz")) {
 # read dataset without the first column
 dataset.dt <- data.table::fread("homework1.gz", data.table=TRUE, drop = 1)
 
+# pixel width & height of the images
 size <- 16
 
-# function to create a dataframe from an index
-create.dataframe <- function(index) {
+# function to create a data table from an index
+create.number.dt <- function(index, row, col) {
   # create array from elements in a row
   pixel.data <- array(unlist(dataset.dt[index]))
   values <- seq(1, size)
@@ -43,16 +44,34 @@ create.dataframe <- function(index) {
   X <- rep(values, size)
   # 1 1 1 ... 1 1 2 2 2 ...
   Y <- c(sapply(seq_len(length(values)), ffillv))
-  # create the dataframe
-  data.frame("X" = X, "Y" = Y, "Pixels" = pixel.data)
+  # create the data table
+  ret <- data.table(index, row, col, "X" = X, "Y" = Y, "Pixels" = pixel.data)
+
+  # string output of the pixel matrix
+  str(matrix(ret$Pixels, nrow = size, byrow = TRUE))
+  # What is the number of rows/observations/example digits?
+  #  2007!
+  # What is the number of columns/features/pixels per example?
+  #  16 x 16 = 256 pixels per number
+
+  ret
 }
-# get the 29th image as a dataframe
-dataset.df <- create.dataframe(29)
-# display pixels as matrix
-matrix(dataset.df$Pixels, nrow = size, byrow = TRUE)
+
+# collect number data tables into one data table
+numbers.dt.list <- list()
+# must be a perfect square
+numbers.to.display <- 25
+for (show.number in seq(1, numbers.to.display)) {
+  row <- show.number %% sqrt(numbers.to.display)
+  col <- ceiling(show.number / sqrt(numbers.to.display))
+  numbers.dt.list[[show.number]] <- create.number.dt(show.number, row, col)
+}
+numbers.dt <- do.call(rbind, numbers.dt.list)
+
 # display the dataframe
-number.plot <- ggplot(dataset.df, aes(X, Y, fill = dataset.df$Pixels)) +
-  geom_tile(aes(fill = dataset.df$Pixels))
+number.plot <- ggplot(numbers.dt, aes(X, Y, fill = Pixels)) +
+  geom_tile(aes(fill = Pixels)) +
+  facet_grid(row ~ col)
 
 #animint(number.plot)
 number.plot
