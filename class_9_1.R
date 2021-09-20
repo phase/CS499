@@ -20,6 +20,7 @@
 
 library(data.table)
 library(ggplot2)
+library(pdfCluster)
 
 head(iris)
 data.mat <- as.matrix(iris[, c("Petal.Width", "Petal.Length")])
@@ -40,3 +41,24 @@ ggplot() +
     y = Petal.Width,
     color = cluster
   ), data = kmeans.result.dt)
+
+## 9/3/21 vvv
+
+iris.n.clusters.list <- list()
+for (n.clusters in 1:10) {
+  kmeans.result <- stats::kmeans(data.mat, n.clusters)
+  pdfCluster::adj.rand.index(iris$Species, kmeans.result$cluster)
+  iris.n.clusters.list[[paste(n.clusters)]] <- data.table(
+    n.clusters,
+    error = kmeans.result[["tot.withinss"]]
+  )
+}
+# rbind(iris.n.clusters.list[[1]], iris.n.clusters.list[[2]], ...)
+iris.n.clusters <- do.call(rbind, iris.n.clusters.list)
+
+# plot errors
+ggplot() +
+  geom_point(aes(
+    x = n.clusters,
+    y = error),
+    data = iris.n.clusters)
